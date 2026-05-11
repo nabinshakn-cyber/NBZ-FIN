@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- Entity Validations ---
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['userId', 'date', 'amount', 'currency', 'type', 'personal_or_business', 'createdAt', 'updatedAt'])
+        && data.userId is string
+        && data.date is string
+        && data.amount is number && data.amount > 0
+        && data.currency in ['AED', 'INR']
+        && data.type in ['income', 'expense', 'lent', 'borrowed']
+        && data.personal_or_business in ['personal', 'business']
+        && data.createdAt == request.time
+        && data.updatedAt == request.time
+        && (data.get('description', '') is string && data.get('description', '').size() <= 500)
+        && (data.get('category', '') is string)
+        && (data.get('person', null) == null || data.get('person', '') is string)
+        && data.keys().size() <= 15; // Strict size check
+    }
+
+    // --- Collection Routes ---
+    match /transactions/{transactionId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      
+      allow create: if isSignedIn() 
+        && isValidId(transactionId)
+        && isOwner(incoming().userId)
+        && isValidTransaction(incoming());
+
+      allow update: if isOwner(existing().userId)
+        && isOwner(incoming().userId) // Prevent identity spoofing
+        && incoming().createdAt == existing().createdAt // Immutable field
+        && isValidTransaction(incoming())
+        && (
+          // Standard Update Action
+          incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'currency', 'category', 'description', 'type', 'merchant', 'person', 'payment_method', 'personal_or_business', 'ledger_type', 'ai_suggestion', 'updatedAt'])
+        );
+
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /reminders/{reminderId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow create: if isSignedIn() 
+        && isOwner(incoming().userId);
+      allow update: if isOwner(existing().userId)
+        && isOwner(incoming().userId);
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /accounts/{accountId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isOwner(incoming().userId);
+      allow update: if isOwner(existing().userId) && isOwner(incoming().userId);
+      allow delete: if isOwner(existing().userId);
+    }
+  }
+}

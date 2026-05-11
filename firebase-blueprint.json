@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial transaction (personal or business)",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the owner" },
+        "date": { "type": "string", "format": "date-time" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string", "enum": ["AED", "INR"] },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["income", "expense", "lent", "borrowed"] },
+        "merchant": { "type": "string" },
+        "person": { "type": "string" },
+        "payment_method": { "type": "string" },
+        "personal_or_business": { "type": "string", "enum": ["personal", "business"] },
+        "ledger_type": { "type": "string" },
+        "ai_suggestion": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "date", "amount", "currency", "type", "personal_or_business"]
+    },
+    "Reminder": {
+      "title": "Reminder",
+      "description": "Financial reminder/deadline",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "title": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "type": { "type": "string", "enum": ["repayment", "bill", "savings"] }
+      },
+      "required": ["userId", "title", "dueDate", "status"]
+    },
+    "Account": {
+      "title": "Account",
+      "description": "Bank account or cash wallet",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "bankName": { "type": "string" },
+        "balance": { "type": "number" },
+        "currency": { "type": "string", "enum": ["AED", "INR"] },
+        "type": { "type": "string", "enum": ["bank", "cash", "card"] },
+        "location": { "type": "string", "enum": ["UAE", "India", "Cash"] }
+      },
+      "required": ["userId", "bankName", "balance", "currency", "type", "location"]
+    }
+  },
+  "firestore": {
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "User transactions"
+    },
+    "/reminders/{reminderId}": {
+      "schema": "Reminder",
+      "description": "Financial reminders"
+    },
+    "/accounts/{accountId}": {
+      "schema": "Account",
+      "description": "Bank and cash accounts"
+    }
+  }
+}

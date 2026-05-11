@@ -1,0 +1,6 @@
+{
+  "name": "NBZ Master Finance AI",
+  "description": "An AI-powered financial operating system for NRI elites, featuring proactive push notifications for bill reminders, automated tranches, and strategic AI audits.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["AI Financial Insights", "Interactive Dashboard", "Transaction Management"]
+}
