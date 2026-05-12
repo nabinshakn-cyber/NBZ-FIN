@@ -93,7 +93,7 @@ export async function parseTransactionWithAI(input: string): Promise<Partial<Tra
     
     Return ONLY a JSON object in this format:
     {
-      "type": "income | expense | lent | borrowed | transfer",
+      "type": "income | expense | lent | borrowed | transfer | emi | gold_loan",
       "category": "string",
       "amount": number,
       "currency": "AED | INR",
@@ -139,7 +139,7 @@ export async function analyzeImageWithAI(base64Data: string, mimeType: string): 
     
     Return ONLY a JSON object in this format:
     {
-      "type": "income | expense | lent | borrowed | transfer",
+      "type": "income | expense | lent | borrowed | transfer | emi | gold_loan",
       "merchant": "string | null",
       "amount": number,
       "currency": "AED | INR",
@@ -191,8 +191,8 @@ export async function analyzeLedgerWithAI(input: string): Promise<any | null> {
     
     Return ONLY a JSON object in this format:
     {
-      "ledger_type": "lent | borrowed",
-      "person_name": "string",
+      "ledger_type": "lent | borrowed | emi | gold_loan",
+      "person_name": "string (for emi/gold_loan use bank or entity name)",
       "amount": number,
       "currency": "AED | INR",
       "due_date": "YYYY-MM-DD | null",
@@ -390,7 +390,7 @@ export async function scanFinancialDocument(base64Image: string): Promise<any | 
       "currency": "AED | INR",
       "category": "string",
       "description": "string",
-      "type": "income | expense | lent | borrowed | transfer",
+      "type": "income | expense | lent | borrowed | transfer | emi | gold_loan",
       "domain": "personal | business",
       "person": "string | null",
       "ledger_type": "string | null",

@@ -4,40 +4,71 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   
-  /* Premium Palette */
+  /* Constant Accent */
   --color-gold: #D4AF37;
   --color-gold-light: #FFD700;
-  --color-obsidian: #050505;
-  --color-glass: rgba(255, 255, 255, 0.03);
-  --color-glass-border: rgba(212, 175, 55, 0.15);
+  
+  /* Dynamic Palette */
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-card: var(--bg-card);
+  --color-border-card: var(--border-card);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-glass-bg: var(--glass-bg);
+}
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8fafc;
+  --border-card: rgba(0, 0, 0, 0.05);
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+}
+
+.dark {
+  --bg-primary: #050505;
+  --bg-card: #121212;
+  --border-card: rgba(212, 175, 55, 0.15);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --glass-bg: rgba(255, 255, 255, 0.03);
 }
 
 @layer base {
   body {
-    @apply bg-[var(--color-obsidian)] text-zinc-100 antialiased font-sans min-h-screen selection:bg-gold/30 selection:text-gold-light;
-    background-image: radial-gradient(circle at 50% -20%, #1a1a1a 0%, transparent 70%);
+    @apply bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] antialiased font-sans min-h-screen transition-colors duration-300 selection:bg-gold/30 selection:text-gold-light;
+    background-image: radial-gradient(circle at 50% -20%, var(--bg-primary-accent, #f1f5f9) 0%, transparent 70%);
+  }
+
+  .dark body {
+    --bg-primary-accent: #1a1a1a;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-[var(--color-glass)] backdrop-blur-xl rounded-[2rem] border border-[var(--color-glass-border)] p-8 transition-all duration-300;
+    @apply bg-[var(--color-bg-card)] backdrop-blur-xl rounded-[2rem] border border-[var(--color-border-card)] p-8 transition-all duration-300;
   }
   
   .glass {
-    @apply bg-[var(--color-glass)] backdrop-blur-md border border-[var(--color-glass-border)];
+    @apply bg-[var(--color-glass-bg)] backdrop-blur-md border border-[var(--color-border-card)];
   }
   
   .btn-primary {
-    @apply bg-[var(--color-gold)] text-[var(--color-obsidian)] px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:bg-[var(--color-gold-light)];
+    @apply bg-[var(--color-gold)] text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:bg-[var(--color-gold-light)];
+  }
+
+  .dark .btn-primary {
+    @apply text-black;
   }
 
   .btn-secondary {
-    @apply bg-zinc-800/50 text-gold-light px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-xs border border-gold/20 transition-all active:scale-95 backdrop-blur-md hover:bg-zinc-800;
+    @apply bg-zinc-100 dark:bg-zinc-800/50 text-gold-light px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-xs border border-gold/20 transition-all active:scale-95 backdrop-blur-md hover:bg-zinc-200 dark:hover:bg-zinc-800;
   }
 
   .input-field {
-    @apply bg-white/5 border border-white/10 rounded-2xl px-5 py-3 focus:outline-none focus:ring-1 focus:ring-gold/30 transition-all text-white placeholder:text-zinc-600;
+    @apply bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-5 py-3 focus:outline-none focus:ring-1 focus:ring-gold/30 transition-all text-current placeholder:text-zinc-500 dark:placeholder:text-zinc-600;
   }
 
   .gold-gradient {

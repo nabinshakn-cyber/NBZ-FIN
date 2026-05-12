@@ -4,7 +4,7 @@ import {
   Cell, PieChart, Pie, LineChart, Line, AreaChart, Area
 } from 'recharts';
 import { Transaction, Currency, Domain, Account } from '../types';
-import { TrendingUp, TrendingDown, DollarSign, BrainCircuit, Wallet, Briefcase, Activity, AlertTriangle, Lightbulb, Sparkles, Bell, CheckCircle, Clock, Building2, Coins, Globe, ArrowUpRight, ArrowDownRight, ShieldCheck } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, BrainCircuit, Wallet, Briefcase, Activity, AlertTriangle, Lightbulb, Sparkles, Bell, CheckCircle, Clock, Building2, Coins, Globe, ArrowUpRight, ArrowDownRight, ShieldCheck, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { performMasterAuditWithAI } from '../services/geminiService';
 import { fetchLiveRates, ExchangeRates, DEFAULT_AED_TO_INR } from '../services/currencyService';
@@ -14,11 +14,12 @@ interface DashboardProps {
   reminders: any[];
   accounts: Account[];
   onAskAI: () => void;
+  onNavigateToWallet: () => void;
 }
 
 const COLORS = ['#D4AF37', '#FFD700', '#C5A028', '#B8860B', '#996515'];
 
-export default function Dashboard({ transactions, reminders = [], accounts = [], onAskAI }: DashboardProps) {
+export default function Dashboard({ transactions, reminders = [], accounts = [], onAskAI, onNavigateToWallet }: DashboardProps) {
   const [activeCurrency, setActiveCurrency] = React.useState<Currency>('AED');
   const [activeDomain, setActiveDomain] = React.useState<Domain | 'all'>('all');
 
@@ -157,9 +158,9 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
   }, [transactions, activeCurrency]);
 
   return (
-    <div className="space-y-8 pb-12 animate-in fade-in duration-1000">
+    <div className="space-y-4 pb-6 animate-in fade-in duration-1000">
       {/* Premium Vault Header */}
-      <section className="relative overflow-hidden rounded-[2.5rem] bg-zinc-900 border border-gold/20 p-8 lg:p-12 gold-shadow">
+      <section className="relative overflow-hidden rounded-2xl bg-bg-card border border-gold/20 p-6 gold-shadow">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-gold/5 to-transparent pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gold/5 blur-[120px] rounded-full pointer-events-none" />
         
@@ -170,48 +171,48 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
                 <ShieldCheck size={20} />
               </div>
               <div>
-                <h2 className="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Capital Vault</h2>
-                <p className="text-zinc-500 text-xs font-medium">Global Liquidity Real-time Snapshot</p>
+                <h2 className="text-[10px] font-black text-gold uppercase tracking-[0.3em]">Total Savings</h2>
+                <p className="text-text-secondary text-xs font-medium">Money in UAE and India</p>
               </div>
             </div>
 
             <div className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 w-fit">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Live FX Protocol</span>
+                <span className="text-[10px] font-black text-text-secondary uppercase tracking-widest">Rate for Today</span>
               </div>
-              <div className="h-4 w-px bg-white/10" />
-              <p className="text-xs font-bold text-white">
+              <div className="h-4 w-px bg-border-card" />
+              <p className="text-xs font-bold text-text-primary">
                 1 AED = <span className="text-gold">{(fxRates?.['INR'] || DEFAULT_AED_TO_INR).toFixed(2)} INR</span>
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">UAE Liquidity</p>
+                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">UAE Balance</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-gold font-bold text-lg">DH</span>
-                  <span className="text-5xl font-black tracking-tighter text-white">
+                  <span className="text-gold font-bold text-sm">DH</span>
+                  <span className="text-3xl font-black tracking-tighter text-text-primary">
                     {aedBalance.toLocaleString()}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-bold mt-2">
-                  <ArrowUpRight size={14} />
-                  <span>Verified Funds</span>
+                <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold mt-1">
+                  <ArrowUpRight size={12} />
+                  <span>Money is Safe</span>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">India Reserves</p>
+                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">India Balance</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-gold font-bold text-lg">₹</span>
-                  <span className="text-5xl font-black tracking-tighter text-white">
+                  <span className="text-gold font-bold text-sm">₹</span>
+                  <span className="text-3xl font-black tracking-tighter text-text-primary">
                     {inrBalance.toLocaleString()}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-orange-400 font-bold mt-2">
-                  <Globe size={14} />
-                  <span>NRB Compliance Active</span>
+                <div className="flex items-center gap-1.5 text-[10px] text-orange-400 font-bold mt-1">
+                  <Globe size={12} />
+                  <span>Ready to Use</span>
                 </div>
               </div>
             </div>
@@ -231,7 +232,7 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
                 ) : (
                   <BrainCircuit size={18} className="group-hover:rotate-12 transition-transform" />
                 )}
-                {isAuditing ? 'Auditing Vault...' : cooldownSeconds > 0 ? `Reset in ${cooldownSeconds}s` : 'Analyze Vault'}
+                {isAuditing ? 'Checking data...' : cooldownSeconds > 0 ? `Wait ${cooldownSeconds}s` : 'Get AI Advice'}
               </button>
               
               {auditError && (
@@ -252,48 +253,55 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
                       : 'bg-white/5 text-zinc-500 hover:text-white'
                     }`}
                   >
-                    {c}
+                    View in {c}
                   </button>
                 ))}
               </div>
             </div>
             
             <p className="text-[10px] text-zinc-500 italic text-center px-4">
-              "AI Intelligence OS is monitoring your cross-border tranches for the optimal FX window."
+              "AI is ready to help you manage your money better."
             </p>
           </div>
         </div>
-      </section>
-
-      {/* Account Snapshots Horizontal Carousel/Grid */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <h3 className="font-black uppercase tracking-widest text-xs text-gold/60">Asset Distribution</h3>
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">{accounts.length} Active Nodes</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {accounts.map(acc => (
-            <motion.div 
-              key={acc.id} 
-              whileHover={{ y: -5 }}
-              className="card group hover:border-gold/30 p-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-2 rounded-xl ${acc.location === 'UAE' ? 'bg-indigo-500/10 text-indigo-400' : acc.location === 'India' ? 'bg-orange-500/10 text-orange-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                  {acc.location === 'Cash' ? <Coins size={16} /> : <Building2 size={16} />}
-                </div>
-                <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-full">
-                  <div className={`w-1 h-1 rounded-full ${acc.location === 'UAE' ? 'bg-indigo-400' : acc.location === 'India' ? 'bg-orange-400' : 'bg-emerald-400'}`} />
-                  <span className="text-[9px] font-black uppercase text-zinc-400">{acc.location}</span>
-                </div>
+      </section>      {/* Regional Assets Quick Glance */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-400/20">
+                <Globe size={16} />
               </div>
-              <h4 className="font-bold text-white mb-2 group-hover:text-gold transition-colors">{acc.bankName}</h4>
-              <p className="text-2xl font-black tracking-tighter text-white">
-                <span className="text-xs font-bold text-gold mr-1">{acc.currency === 'AED' ? 'DH' : '₹'}</span>
-                {acc.balance.toLocaleString()}
-              </p>
-            </motion.div>
-          ))}
+              <h3 className="font-black uppercase tracking-[0.2em] text-[10px] text-zinc-100">UAE Banks</h3>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {accounts.filter(a => a.location === 'UAE').map(acc => (
+              <AccountMiniCard key={acc.id} account={acc} />
+            ))}
+            {accounts.filter(a => a.location === 'UAE').length === 0 && (
+              <EmptyAccountCard zone="UAE" onAdd={onNavigateToWallet} />
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400 border border-orange-400/20">
+                <Globe size={16} strokeWidth={2.5} />
+              </div>
+              <h3 className="font-black uppercase tracking-[0.2em] text-[10px] text-zinc-100">India Banks</h3>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {accounts.filter(a => a.location === 'India').map(acc => (
+              <AccountMiniCard key={acc.id} account={acc} />
+            ))}
+            {accounts.filter(a => a.location === 'India').length === 0 && (
+              <EmptyAccountCard zone="India" onAdd={onNavigateToWallet} />
+            )}
+          </div>
         </div>
       </div>
 
@@ -302,56 +310,52 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
           <motion.div 
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="card border-l-4 border-l-gold bg-zinc-900 relative overflow-hidden"
+            className="card border-l-4 border-l-gold relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 blur-[80px] -mr-32 -mt-32 rounded-full" />
-            <div className="flex items-center justify-between mb-8 relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gold/10 text-gold rounded-2xl flex items-center justify-center border border-gold/20 shadow-[0_0_15px_rgba(212,175,55,0.2)]">
-                  <Sparkles size={24} />
+            <div className="flex items-center justify-between mb-6 relative z-10">
+              <div className="flex items-center gap-4 text-sm">
+                <div className="w-10 h-10 bg-gold/10 text-gold rounded-xl flex items-center justify-center border border-gold/20 shadow-[0_0_10px_rgba(212,175,55,0.1)]">
+                  <Sparkles size={20} />
                 </div>
                 <div>
-                  <h3 className="font-black text-xl text-white tracking-tight">Intelligence Report</h3>
-                  <p className="text-xs text-zinc-500 font-medium tracking-wide">Professional Strategic Suite</p>
+                  <h3 className="font-black text-lg text-text-primary tracking-tight">AI Report</h3>
+                  <p className="text-[10px] text-text-secondary font-medium tracking-wide">Simple tips for your money</p>
                 </div>
-              </div>
-              <div className="hidden sm:flex items-center gap-2 text-[10px] font-black text-gold uppercase tracking-[0.2em] bg-gold/5 px-4 py-2 rounded-xl border border-gold/10">
-                <span className="w-1.5 h-1.5 bg-gold rounded-full animate-pulse mr-1" />
-                Live Analysis
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
-              <div className="space-y-2 p-4 rounded-2xl bg-white/5 border border-white/5">
-                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Remittance Window</span>
-                <p className="text-sm font-bold text-zinc-200 leading-relaxed">{nriInsights.remittance_advice}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+              <div className="space-y-1.5 p-3 rounded-xl bg-white/5 border border-white/5">
+                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Remittance Window</span>
+                <p className="text-xs font-bold text-zinc-200 leading-relaxed">{nriInsights.remittance_advice}</p>
               </div>
-              <div className="space-y-2 p-4 rounded-2xl bg-white/5 border border-white/5">
-                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">FX Strategy</span>
-                <p className="text-sm font-bold text-zinc-200 leading-relaxed">{nriInsights.currency_strategy}</p>
+              <div className="space-y-1.5 p-3 rounded-xl bg-white/5 border border-white/5">
+                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">FX Strategy</span>
+                <p className="text-xs font-bold text-zinc-200 leading-relaxed">{nriInsights.currency_strategy}</p>
               </div>
-              <div className="space-y-2 p-4 rounded-2xl bg-white/5 border border-white/5">
-                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Investment Tranche</span>
-                <p className="text-sm font-bold text-zinc-200 leading-relaxed">{nriInsights.investment_hint}</p>
+              <div className="space-y-1.5 p-3 rounded-xl bg-white/5 border border-white/5">
+                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Investment Tranche</span>
+                <p className="text-xs font-bold text-zinc-200 leading-relaxed">{nriInsights.investment_hint}</p>
               </div>
-              <div className="space-y-2 p-4 rounded-2xl bg-gold/10 border border-gold/20">
-                <span className="text-[9px] font-black text-gold uppercase tracking-widest">Strategic Warning</span>
-                <p className="text-sm font-bold text-gold-light leading-relaxed">{nriInsights.risk_warning}</p>
+              <div className="space-y-1.5 p-3 rounded-xl bg-gold/10 border border-gold/20">
+                <span className="text-[8px] font-black text-gold uppercase tracking-widest">Strategic Warning</span>
+                <p className="text-xs font-bold text-gold-light leading-relaxed">{nriInsights.risk_warning}</p>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="card lg:col-span-3 min-h-[400px]">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="font-black text-lg text-white uppercase tracking-tight flex items-center gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="card lg:col-span-3 min-h-[350px] p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-black text-base text-text-primary uppercase tracking-tight flex items-center gap-3">
                Performance Matrix 
-               <span className="text-[10px] font-bold text-zinc-500 py-1 px-3 bg-white/5 rounded-full border border-white/5 uppercase tracking-widest">{activeCurrency}</span>
+               <span className="text-[9px] font-bold text-text-secondary py-1 px-3 bg-white/5 rounded-full border border-white/5 uppercase tracking-widest">{activeCurrency}</span>
             </h3>
           </div>
-          <div className="h-[300px]">
+          <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
@@ -385,16 +389,16 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
           </div>
         </div>
 
-        <div className="card lg:col-span-2 min-h-[400px] flex flex-col">
-          <h3 className="font-black text-lg text-white uppercase tracking-tight mb-8">Sector Allocation</h3>
+        <div className="card lg:col-span-2 min-h-[350px] p-6 flex flex-col">
+          <h3 className="font-black text-base text-text-primary uppercase tracking-tight mb-6">Sector Allocation</h3>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={categoryData}
-                  innerRadius={70}
-                  outerRadius={90}
-                  paddingAngle={8}
+                  innerRadius={50}
+                  outerRadius={70}
+                  paddingAngle={6}
                   dataKey="value"
                   stroke="none"
                 >
@@ -405,19 +409,19 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: '#151515',
-                    borderRadius: '24px', 
+                    borderRadius: '16px', 
                     border: '1px solid rgba(212,175,55,0.2)', 
-                    padding: '12px 16px'
+                    padding: '8px 12px'
                   }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-2 mt-6 justify-center">
+          <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-4 justify-center">
             {categoryData.map((entry, index) => (
-              <div key={entry.name} className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{entry.name}</span>
+              <div key={entry.name} className="flex items-center gap-1.5">
+                <div className="w-1 h-1 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest">{entry.name}</span>
               </div>
             ))}
           </div>
@@ -425,21 +429,21 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
       </div>
 
       {/* New Section: Expense Trends */}
-      <section className="card bg-zinc-900 border-white/5 overflow-hidden group">
-        <div className="p-8 border-b border-white/5 bg-white/[0.01] flex items-center justify-between">
+      <section className="card overflow-hidden group">
+        <div className="p-4 border-b border-white/5 bg-white/[0.01] flex items-center justify-between">
           <div>
-            <h3 className="font-black text-xl text-white tracking-tight uppercase italic flex items-center gap-3">
-              Expense Velocity <Activity size={20} className="text-rose-500 animate-pulse" />
+            <h3 className="font-black text-lg text-text-primary tracking-tight uppercase italic flex items-center gap-3">
+              Expense Velocity <Activity size={18} className="text-rose-500 animate-pulse" />
             </h3>
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-1">6-Month Strategic Outflow Analysis</p>
+            <p className="text-text-secondary text-[10px] font-bold uppercase tracking-widest mt-0.5">6-Month Strategic Outflow Analysis</p>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 rounded-xl border border-rose-500/20">
-            <TrendingDown size={14} className="text-rose-400" />
-            <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Trend Pattern Detected</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 rounded-lg border border-rose-500/20">
+            <TrendingDown size={12} className="text-rose-400" />
+            <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest">Trend Pattern Detected</span>
           </div>
         </div>
         
-        <div className="p-8 h-[400px]">
+        <div className="p-6 h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData}>
               <defs>
@@ -453,28 +457,28 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
                 dataKey="month" 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fill: '#71717a', fontSize: 10, fontWeight: 700 }} 
-                dy={10}
+                tick={{ fill: '#71717a', fontSize: 9, fontWeight: 700 }} 
+                dy={8}
               />
               <YAxis 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fill: '#71717a', fontSize: 10, fontWeight: 700 }} 
+                tick={{ fill: '#71717a', fontSize: 9, fontWeight: 700 }} 
               />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#151515',
-                  borderRadius: '24px', 
+                  borderRadius: '16px', 
                   border: '1px solid rgba(239, 68, 68, 0.2)', 
-                  padding: '12px 16px'
+                  padding: '8px 12px'
                 }}
-                itemStyle={{ color: '#f43f5e', fontSize: '12px', fontWeight: 'bold' }}
+                itemStyle={{ color: '#f43f5e', fontSize: '11px', fontWeight: 'bold' }}
               />
               <Area 
                 type="monotone" 
                 dataKey="amount" 
                 stroke="#f43f5e" 
-                strokeWidth={4}
+                strokeWidth={3}
                 fillOpacity={1} 
                 fill="url(#colorTrend)" 
                 animationDuration={2000}
@@ -482,17 +486,56 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <div className="px-8 pb-8 flex items-center gap-4 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+        <div className="px-6 pb-6 flex items-center gap-4 text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-rose-500/20 border border-rose-500/40" />
+            <div className="w-2.5 h-2.5 rounded-full bg-rose-500/20 border border-rose-500/40" />
             <span>Projected Zone</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-10 h-1 bg-rose-500 rounded-full" />
+            <div className="w-8 h-0.5 bg-rose-500 rounded-full" />
             <span>Observed Reality</span>
           </div>
         </div>
       </section>
     </div>
+  );
+}
+
+function AccountMiniCard({ account }: { account: Account }) {
+  return (
+    <motion.div 
+      whileHover={{ y: -5 }}
+      className="card group hover:border-gold/30 p-4"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className={`p-1.5 rounded-lg ${account.location === 'UAE' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-orange-500/10 text-orange-400'}`}>
+          <Building2 size={14} />
+        </div>
+        <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-full">
+          <div className={`w-1 h-1 rounded-full ${account.location === 'UAE' ? 'bg-indigo-400' : 'bg-orange-400'}`} />
+          <span className="text-[8px] font-black uppercase text-zinc-400">{account.location}</span>
+        </div>
+      </div>
+      <h4 className="font-bold text-sm text-text-primary mb-1 group-hover:text-gold transition-colors">{account.bankName}</h4>
+      <p className="text-xl font-black tracking-tighter text-text-primary">
+        <span className="text-[10px] font-bold text-gold mr-0.5">{account.currency === 'AED' ? 'DH' : '₹'}</span>
+        {account.balance.toLocaleString()}
+      </p>
+    </motion.div>
+  );
+}
+
+function EmptyAccountCard({ zone, onAdd }: { zone: string; onAdd: () => void }) {
+  return (
+    <motion.button 
+      whileHover={{ y: -5 }}
+      onClick={onAdd}
+      className="card group border-dashed border-white/10 hover:border-gold/30 p-6 flex flex-col items-center justify-center text-center bg-white/[0.01]"
+    >
+      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-zinc-600 mb-3 group-hover:text-gold transition-colors">
+        <Plus size={20} />
+      </div>
+      <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-gold transition-colors">Initialize {zone} Bank</p>
+    </motion.button>
   );
 }

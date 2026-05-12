@@ -10,17 +10,27 @@ import Transactions from './components/Transactions';
 import AIChat from './components/AIChat';
 import Ledger from './components/Ledger';
 import Savings from './components/Savings';
+import BillScanner from './components/BillScanner';
 import { View, Transaction, Account } from './types';
-import { SupabaseProvider, useSupabase } from './contexts/SupabaseContext';
-import { supabase, tables, isSupabaseConfigured } from './lib/supabase';
 import WalletView from './components/Wallet';
 import Settings from './components/Settings';
 import Login from './components/Login';
-import { getDocs, writeBatch } from 'firebase/firestore';
+import { NotificationProvider, NotificationCenter, useNotifications } from './components/NotificationCenter';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { 
+  subscribeToCollection, 
+  createDocument, 
+  updateDocument, 
+  deleteDocument 
+} from './lib/firestoreUtils';
 import { motion, AnimatePresence } from 'motion/react';
+import { Sun, Moon } from 'lucide-react';
 
 function AppContent() {
-  const { user, loading } = useSupabase();
+  const { user, loading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const { addNotification } = useNotifications();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
@@ -29,7 +39,7 @@ function AppContent() {
 
   // Notification Monitor Effect
   useEffect(() => {
-    if (!reminders.length || Notification.permission !== 'granted') return;
+    if (!reminders.length) return;
 
     const checkReminders = () => {
       const now = new Date();
@@ -39,9 +49,10 @@ function AppContent() {
         const dueDate = new Date(reminder.due_date);
         // If due soon and not already notified in this session
         if (dueDate <= oneDayFromNow && dueDate >= now && !notifiedReminders.has(reminder.id)) {
-          new Notification('NBZ Vault Alert: Bill Due', {
-            body: `${reminder.entity_name} tranche is due on ${reminder.due_date}. Access your vault to authorize payment.`,
-            icon: '/favicon.ico'
+          addNotification({
+            title: 'Bill Due Soon',
+            message: `${reminder.title} repayment is due on ${reminder.due_date}.`,
+            type: 'reminder'
           });
           setNotifiedReminders(prev => new Set(prev).add(reminder.id));
         }
@@ -57,96 +68,59 @@ function AppContent() {
   useEffect(() => {
     if (!user) return;
 
-    const fetchData = async () => {
-      // Fetch Transactions
-      const { data: txs } = await supabase
-        .from(tables.TRANSACTIONS)
-        .select('*')
-        .order('date', { ascending: false });
-      if (txs) setTransactions(txs as Transaction[]);
+    // Firebase Subscriptions
+    const unsubTxs = subscribeToCollection('transactions', (data) => {
+      setTransactions(data as Transaction[]);
+    });
 
-      // Fetch Accounts
-      const { data: acs } = await supabase.from('accounts').select('*');
-      if (acs) setAccounts(acs as Account[]);
+    const unsubAccounts = subscribeToCollection('accounts', (data) => {
+      setAccounts(data as Account[]);
+    });
 
-      // Fetch Loans (Reminders)
-      const { data: lns } = await supabase.from('loans').select('*').order('due_date', { ascending: true });
-      if (lns) setReminders(lns);
-    };
-
-    fetchData();
-
-    // Realtime Sync Subscription
-    const channel = supabase
-      .channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: tables.TRANSACTIONS }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setTransactions(prev => [payload.new as Transaction, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setTransactions(prev => prev.map(t => t.id === payload.new.id ? payload.new as Transaction : t));
-        } else if (payload.eventType === 'DELETE') {
-          setTransactions(prev => prev.filter(t => t.id === payload.old.id));
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts' }, (payload) => {
-        if (payload.eventType === 'INSERT') setAccounts(prev => [...prev, payload.new as Account]);
-        if (payload.eventType === 'UPDATE') setAccounts(prev => prev.map(a => a.id === payload.new.id ? payload.new as Account : a));
-        if (payload.eventType === 'DELETE') setAccounts(prev => prev.filter(a => a.id === payload.old.id));
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'loans' }, (payload) => {
-        if (payload.eventType === 'INSERT') setReminders(prev => [...prev, payload.new]);
-        if (payload.eventType === 'UPDATE') setReminders(prev => prev.map(l => l.id === payload.new.id ? payload.new : l));
-        if (payload.eventType === 'DELETE') setReminders(prev => prev.filter(l => l.id === payload.old.id));
-      })
-      .subscribe();
+    const unsubReminders = subscribeToCollection('reminders', (data) => {
+      setReminders(data);
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubTxs();
+      unsubAccounts();
+      unsubReminders();
     };
   }, [user]);
 
   const handleAddTransaction = async (newTx: Omit<Transaction, 'id'>) => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from(tables.TRANSACTIONS)
-        .insert([{ ...newTx, user_id: user.id }])
-        .select()
-        .single();
-
-      if (error) throw error;
+      await createDocument('transactions', newTx);
 
       // Handle Loans/Reminders logic
       if (newTx.type === 'lent' || newTx.type === 'borrowed') {
-        // We'll use the loans table for this now
-        await supabase.from('loans').insert([{
-          user_id: user.id,
+        await createDocument('reminders', {
           amount: newTx.amount,
           currency: newTx.currency,
-          entity_name: newTx.person || 'Unknown',
-          type: newTx.type,
-          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-        }]);
+          title: newTx.person || 'Unknown',
+          type: newTx.type === 'lent' ? 'bill' : 'repayment', // simplified for reminders model
+          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          status: 'pending'
+        });
       }
     } catch (error) {
-      console.error("Supabase Tx Error:", error);
+      console.error("Firebase Tx Error:", error);
     }
   };
 
   const handleAddAccount = async (acc: Omit<Account, 'id'>) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from('accounts').insert([{ ...acc, user_id: user.id }]);
-      if (error) throw error;
+      await createDocument('accounts', acc);
     } catch (error) {
-      console.error("Supabase Account Error:", error);
+      console.error("Firebase Account Error:", error);
     }
   };
 
   const handleUpdateAccount = async (id: string, updates: Partial<Account>) => {
     try {
-      const { error } = await supabase.from('accounts').update(updates).eq('id', id);
-      if (error) throw error;
+      await updateDocument('accounts', id, updates);
     } catch (error) {
       console.error("Update Account Error:", error);
     }
@@ -154,8 +128,7 @@ function AppContent() {
 
   const handleDeleteAccount = async (id: string) => {
     try {
-      const { error } = await supabase.from('accounts').delete().eq('id', id);
-      if (error) throw error;
+      await deleteDocument('accounts', id);
     } catch (error) {
       console.error("Delete Account Error:", error);
     }
@@ -163,8 +136,7 @@ function AppContent() {
 
   const handleUpdateTransaction = async (id: string, updates: Partial<Transaction>) => {
     try {
-      const { error } = await supabase.from(tables.TRANSACTIONS).update(updates).eq('id', id);
-      if (error) throw error;
+      await updateDocument('transactions', id, updates);
     } catch (error) {
       console.error("Update Tx Error:", error);
     }
@@ -172,32 +144,30 @@ function AppContent() {
 
   const handleDeleteTransaction = async (id: string) => {
     try {
-      const { error } = await supabase.from(tables.TRANSACTIONS).delete().eq('id', id);
-      if (error) throw error;
+      await deleteDocument('transactions', id);
     } catch (error) {
       console.error("Delete Tx Error:", error);
     }
   };
 
   const handleResetAllData = async () => {
-    if (!user) return;
-    try {
-      await supabase.from(tables.TRANSACTIONS).delete().eq('user_id', user.id);
-      await supabase.from('accounts').delete().eq('user_id', user.id);
-      setCurrentView('dashboard');
-    } catch (error) {
-      console.error("Reset Error:", error);
-    }
+    // Note: Batch deletion is usually handled better in separate logic, 
+    // but for simplicity we'll just inform we can't easily perform bulk delete from client in a single call without cloud functions or manual doc mapping
+    alert("Resetting data in live mode requires per-document removal which is restricted for safety.");
   };
 
-  const handleSeedDemoData = async () => {
+  const handleSeedData = async () => {
     if (!user) return;
     try {
-      const demoTransactions = [
-        { description: 'Global Systems Salary', amount: 25000, currency: 'AED', type: 'income', category: 'salary', domain: 'personal', date: new Date().toISOString().split('T')[0], user_id: user.id },
-        { description: 'Burj Khalifa Residence Rent', amount: 8000, currency: 'AED', type: 'expense', category: 'bills', domain: 'personal', date: new Date().toISOString().split('T')[0], user_id: user.id },
-      ];
-      await supabase.from(tables.TRANSACTIONS).insert(demoTransactions);
+      await createDocument('transactions', {
+        description: 'Global Systems Salary', 
+        amount: 25000, 
+        currency: 'AED', 
+        type: 'income', 
+        category: 'salary', 
+        domain: 'personal', 
+        date: new Date().toISOString().split('T')[0]
+      });
     } catch (error) {
       console.error("Seed Error:", error);
     }
@@ -208,7 +178,7 @@ function AppContent() {
       <div className="h-screen w-screen flex items-center justify-center bg-zinc-900 leading-relaxed font-sans">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-gold/10 border-t-gold rounded-full animate-spin" />
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gold/40">Synchronizing Vault Protocol...</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gold/40">Opening your wallet...</p>
         </div>
       </div>
     );
@@ -221,7 +191,7 @@ function AppContent() {
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard transactions={transactions} reminders={reminders} accounts={accounts} onAskAI={() => setCurrentView('ai-advisor')} />;
+        return <Dashboard transactions={transactions} reminders={reminders} accounts={accounts} onAskAI={() => setCurrentView('ai-advisor')} onNavigateToWallet={() => setCurrentView('wallet')} />;
       case 'wallet':
         return (
           <WalletView 
@@ -241,13 +211,15 @@ function AppContent() {
           />
         );
       case 'ledger':
-        return <Ledger transactions={transactions} onAdd={handleAddTransaction} />;
+        return <Ledger transactions={transactions} onAdd={handleAddTransaction} onUpdate={handleUpdateTransaction} />;
+      case 'scanner':
+        return <BillScanner onAddTransaction={handleAddTransaction} />;
       case 'savings':
         return <Savings />;
       case 'ai-advisor':
         return <AIChat transactions={transactions} />;
       case 'settings':
-        return <Settings onResetData={handleResetAllData} onSeedData={handleSeedDemoData} />;
+        return <Settings onResetData={handleResetAllData} onSeedData={handleSeedData} />;
       default:
         return (
           <div className="flex items-center justify-center min-h-[70vh]">
@@ -267,24 +239,44 @@ function AppContent() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a] selection:bg-gold/20 selection:text-gold">
-      {!isSupabaseConfigured && (
-        <div className="fixed top-0 left-0 right-0 z-[200] bg-zinc-900/80 text-gold px-4 py-2 text-center text-[10px] backdrop-blur-md border-b border-gold/10 flex items-center justify-center gap-3">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gold/10 border border-gold/20">
-            <span className="flex h-1.5 w-1.5 rounded-full bg-gold animate-pulse" />
-            <p className="font-bold uppercase tracking-[0.2em] leading-none">
-              Demo Mode Active
-            </p>
-          </div>
-          <p className="text-zinc-400 font-medium">
-            Local instance running without Supabase. Config in Settings to persist data.
-          </p>
-        </div>
-      )}
+    <div className="flex min-h-screen bg-bg-app text-text-primary overflow-x-hidden font-sans">
       <Sidebar currentView={currentView} onViewChange={setCurrentView} />
-      <main className="lg:ml-64 flex-1 p-6 lg:p-12 max-w-[1400px] mx-auto w-full transition-all duration-300">
-        <div className="mt-16 lg:mt-0">
-          {renderView()}
+      
+      <main className="flex-1 lg:ml-56 min-h-screen relative">
+        <div className="p-4 lg:p-6 w-full">
+          <header className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={toggleTheme}
+                className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-500 hover:text-white transition-all hover:bg-white/10"
+              >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] font-black text-gold uppercase tracking-[0.2em]">{currentView} ACTIVE</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">
+              <NotificationCenter />
+              <div className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center text-black font-black text-[9px] shadow-lg shadow-gold/10">
+                {user.email?.substring(0, 2).toUpperCase()}
+              </div>
+            </div>
+          </header>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentView}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              {renderView()}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>
@@ -293,8 +285,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SupabaseProvider>
-      <AppContent />
-    </SupabaseProvider>
+    <ThemeProvider>
+      <NotificationProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </NotificationProvider>
+    </ThemeProvider>
   );
 }

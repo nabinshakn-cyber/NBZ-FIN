@@ -1,6 +1,6 @@
 
 export type Currency = 'AED' | 'INR';
-export type FinType = 'income' | 'expense' | 'lent' | 'borrowed' | 'transfer';
+export type FinType = 'income' | 'expense' | 'lent' | 'borrowed' | 'transfer' | 'emi' | 'gold_loan';
 export type Domain = 'personal' | 'business';
 
 export interface Transaction {
@@ -13,11 +13,22 @@ export interface Transaction {
   type: FinType;
   merchant?: string;
   person?: string;
+  contact_info?: string;
+  status?: 'pending' | 'settled' | 'overdue';
   payment_method?: string;
   domain: Domain;
   ledger_type?: string;
   ai_suggestion?: string;
   user_id?: string;
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'alert' | 'reminder';
+  date: string;
+  read: boolean;
 }
 
 export interface Budget {
@@ -37,4 +48,4 @@ export interface Account {
   location: 'UAE' | 'India' | 'Cash';
 }
 
-export type View = 'dashboard' | 'transactions' | 'ledger' | 'wallet' | 'ai-advisor' | 'savings' | 'settings';
+export type View = 'dashboard' | 'transactions' | 'ledger' | 'wallet' | 'ai-advisor' | 'savings' | 'settings' | 'scanner';

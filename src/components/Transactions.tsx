@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Transaction, Currency, FinType, Domain } from '../types';
-import { Plus, Search, Receipt, Briefcase, User, Repeat, ArrowUpRight, ArrowDownLeft, Sparkles, Wand2, Camera, FileUp, Loader2, Filter, Calendar, Edit3, Trash2, X, Globe, ArrowRight } from 'lucide-react';
+import { Plus, Search, Receipt, Briefcase, User, Repeat, ArrowUpRight, ArrowDownLeft, Sparkles, Wand2, Camera, FileUp, Loader2, Filter, Calendar, Edit3, Trash2, X, Globe, ArrowRight, Clock, Coins } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { parseTransactionWithAI } from '../services/geminiService';
 import { fetchLiveRates, DEFAULT_AED_TO_INR, ExchangeRates } from '../services/currencyService';
@@ -51,7 +51,8 @@ export default function Transactions({ transactions, onAdd, onUpdate, onDelete }
     category: 'shopping',
     description: '',
     type: 'expense',
-    domain: 'personal'
+    domain: 'personal',
+    status: 'pending'
   });
 
   const handleScanComplete = (scannedTx: Partial<Transaction>) => {
@@ -94,7 +95,8 @@ export default function Transactions({ transactions, onAdd, onUpdate, onDelete }
       category: 'shopping',
       description: '',
       type: 'expense',
-      domain: 'personal'
+      domain: 'personal',
+      status: 'pending'
     });
   };
 
@@ -114,6 +116,8 @@ export default function Transactions({ transactions, onAdd, onUpdate, onDelete }
       case 'lent': return <Repeat size={18} />;
       case 'borrowed': return <Repeat size={18} />;
       case 'transfer': return <Globe size={18} />;
+      case 'emi': return <Clock size={18} />;
+      case 'gold_loan': return <Coins size={18} />;
     }
   };
 
@@ -137,11 +141,11 @@ export default function Transactions({ transactions, onAdd, onUpdate, onDelete }
   };
 
   return (
-    <div className="space-y-10 pb-24">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6 pb-12">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-4xl font-black tracking-tighter text-white uppercase italic">Capital Ledger</h1>
-          <p className="text-zinc-500 mt-1 max-w-sm">Immutable recording of cross-border financial tranches.</p>
+          <h1 className="text-2xl font-black tracking-tighter text-text-primary uppercase italic">Capital Ledger</h1>
+          <p className="text-text-secondary text-[10px] mt-0.5 max-w-sm">Immutable recording of cross-border financial tranches.</p>
         </div>
         <div className="flex items-center gap-4">
           <button 
@@ -263,18 +267,36 @@ export default function Transactions({ transactions, onAdd, onUpdate, onDelete }
                     <option value="transfer">Remittance / Transfer</option>
                     <option value="lent">Lent Assets</option>
                     <option value="borrowed">Borrowed Capital</option>
+                    <option value="emi">EMI Installment</option>
+                    <option value="gold_loan">Gold Loan</option>
                   </select>
                 </div>
                 
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Counterparty</label>
-                  <input 
-                    type="text" 
-                    placeholder="Merchant or Entity name" 
+                <div className="md:col-span-1 space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status</label>
+                  <select 
                     className="input-field w-full"
-                    value={newTx.merchant || newTx.person || ''}
-                    onChange={e => setNewTx({...newTx, merchant: e.target.value, person: e.target.value})}
-                  />
+                    value={newTx.status || 'pending'}
+                    onChange={e => setNewTx({...newTx, status: e.target.value as any})}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="settled">Settled</option>
+                    <option value="overdue">Overdue</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-3 space-y-2">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Counterparty</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
+                    <input 
+                      type="text" 
+                      placeholder={newTx.type === 'lent' || newTx.type === 'borrowed' ? "Person name..." : "Merchant or Entity name"}
+                      className="input-field w-full pl-10"
+                      value={newTx.merchant || newTx.person || ''}
+                      onChange={e => setNewTx({...newTx, merchant: e.target.value, person: e.target.value})}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -336,14 +358,14 @@ export default function Transactions({ transactions, onAdd, onUpdate, onDelete }
         )}
       </AnimatePresence>
 
-      <div className="card bg-zinc-900 border-white/5 p-0 overflow-hidden shadow-2xl">
+      <div className="card bg-bg-card border-border-card p-0 overflow-hidden shadow-2xl">
         <div className="p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/[0.01]">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" size={18} />
             <input 
               type="text" 
               placeholder="Filter tranches, entities, zones..." 
-              className="input-field w-full pl-12 bg-white/5 border-white/5 text-white placeholder:text-zinc-600 focus:border-gold/30"
+              className="input-field w-full pl-12 bg-white/5 border-white/5 text-text-primary placeholder:text-text-secondary focus:border-gold/30"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -365,62 +387,86 @@ export default function Transactions({ transactions, onAdd, onUpdate, onDelete }
               layout
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="relative flex items-center justify-between p-6 hover:bg-white/[0.02] transition-colors group overflow-hidden"
+              className="relative flex items-center justify-between p-4.5 hover:bg-white/[0.02] transition-colors group overflow-hidden"
             >
               <div className={`absolute left-0 top-0 bottom-0 w-1 ${
                 t.type === 'income' ? 'bg-emerald-500' : 
                 t.type === 'expense' ? 'bg-rose-500' :
                 t.type === 'borrowed' ? 'bg-indigo-500' :
                 t.type === 'transfer' ? 'bg-gold' :
+                t.type === 'emi' ? 'bg-orange-500' :
+                t.type === 'gold_loan' ? 'bg-gold' :
                 'bg-zinc-500'
               } opacity-50`} />
 
-              <div className="flex items-center gap-6">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                   t.type === 'income' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
                   t.type === 'expense' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
                   t.type === 'borrowed' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
                   t.type === 'transfer' ? 'bg-gold/10 text-gold border border-gold/20' :
+                  t.type === 'emi' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
+                  t.type === 'gold_loan' ? 'bg-gold/10 text-gold border border-gold/20' :
                   'bg-white/5 text-zinc-500 border border-white/10'
                 }`}>
                   {getTypeIcon(t.type)}
                 </div>
                 <div>
-                  <div className="flex items-center gap-3">
-                    <p className="font-bold text-white text-lg tracking-tight">{t.description}</p>
+                  <div className="flex items-center gap-2">
+                    {(t.type === 'lent' || t.type === 'borrowed') && (t.person || t.merchant) ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-gold uppercase tracking-widest bg-gold/5 px-2 py-0.5 rounded border border-gold/10">
+                          {t.type === 'lent' ? 'To' : 'From'}
+                        </span>
+                        <p className="font-black text-text-primary text-base tracking-tight italic">{t.person || t.merchant}</p>
+                        <span className="text-zinc-600 font-medium text-xs">—</span>
+                        <p className="font-bold text-text-secondary text-sm tracking-tight">{t.description}</p>
+                      </div>
+                    ) : (
+                      <p className="font-bold text-text-primary text-base tracking-tight">{t.description}</p>
+                    )}
                     <span className={`text-[8px] uppercase tracking-widest px-2 py-0.5 rounded-full font-black border ${
                       t.domain === 'business' 
                       ? 'bg-gold/10 text-gold border-gold/20' 
-                      : 'bg-white/5 text-zinc-500 border-white/10'
+                      : 'bg-white/5 text-text-secondary border-white/10'
                     }`}>
                       {t.domain}
                     </span>
+                    {t.status && (
+                      <span className={`text-[8px] uppercase tracking-widest px-2 py-0.5 rounded-full font-black border ${
+                        t.status === 'settled' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                        t.status === 'overdue' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                        'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      }`}>
+                        {t.status}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 mt-1.5">
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter capitalize">{t.category}</p>
-                    <span className="text-zinc-800">•</span>
-                    <p className="text-[10px] text-zinc-600 font-medium">{t.date}</p>
-                    {(t.merchant || t.person) && (
+                    <p className="text-[10px] text-text-secondary font-bold uppercase tracking-tighter capitalize">{t.category}</p>
+                    <span className="text-border-card">•</span>
+                    <p className="text-[10px] text-text-secondary font-medium">{t.date}</p>
+                    {(t.merchant || t.person) && t.type !== 'lent' && t.type !== 'borrowed' && (
                       <>
-                        <span className="text-zinc-800">•</span>
-                        <p className="text-[10px] text-zinc-400 font-semibold truncate max-w-[150px]">{t.merchant || t.person}</p>
+                        <span className="text-border-card">•</span>
+                        <p className="text-[10px] text-text-secondary font-semibold truncate max-w-[150px]">{t.merchant || t.person}</p>
                       </>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="text-right flex items-center gap-6">
-                <div className="space-y-1">
-                  <div className="flex items-baseline justify-end gap-2">
-                    <span className="text-[10px] font-bold text-zinc-500">{t.currency}</span>
-                    <p className={`text-2xl font-black tracking-tighter ${
+              <div className="text-right flex items-center gap-4">
+                <div className="space-y-0.5">
+                  <div className="flex items-baseline justify-end gap-1.5">
+                    <span className="text-[9px] font-bold text-zinc-500">{t.currency}</span>
+                    <p className={`text-xl font-black tracking-tighter ${
                       t.type === 'income' ? 'text-emerald-400' : 
                       t.type === 'expense' ? 'text-rose-400' :
                       t.type === 'borrowed' ? 'text-indigo-400' :
                       t.type === 'transfer' ? 'text-gold' :
                       'text-white'
                     }`}>
-                      {t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '')}
+                      {t.type === 'expense' || t.type === 'emi' || t.type === 'gold_loan' ? '-' : (t.type === 'income' ? '+' : '')}
                       {t.amount.toLocaleString()}
                     </p>
                   </div>
@@ -477,10 +523,10 @@ export default function Transactions({ transactions, onAdd, onUpdate, onDelete }
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="card w-full max-w-2xl bg-zinc-900 border-gold/20 shadow-2xl relative p-0 overflow-hidden"
+              className="card w-full max-w-2xl bg-bg-card border-gold/20 shadow-2xl relative p-0 overflow-hidden"
             >
               <div className="p-8 border-b border-white/5 bg-white/[0.01] flex items-center justify-between">
-                <h3 className="font-black text-xl text-white tracking-tight uppercase">Update Transaction</h3>
+                <h3 className="font-black text-xl text-text-primary tracking-tight uppercase">Update Transaction</h3>
                 <button 
                   onClick={() => { setShowEditModal(false); setEditingTx(null); }}
                   className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-zinc-500 hover:text-white transition-colors"
@@ -551,7 +597,31 @@ export default function Transactions({ transactions, onAdd, onUpdate, onDelete }
                       <option value="transfer">Remittance / Transfer</option>
                       <option value="lent">Lent Assets</option>
                       <option value="borrowed">Borrowed Capital</option>
+                      <option value="emi">EMI Installment</option>
+                      <option value="gold_loan">Gold Loan</option>
                     </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status</label>
+                    <select 
+                      className="input-field w-full"
+                      value={editingTx.status || 'pending'}
+                      onChange={e => setEditingTx({...editingTx, status: e.target.value as any})}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="settled">Settled</option>
+                      <option value="overdue">Overdue</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Counterparty</label>
+                    <input 
+                      type="text" 
+                      className="input-field w-full"
+                      placeholder="Person or Merchant name"
+                      value={editingTx.merchant || editingTx.person || ''}
+                      onChange={e => setEditingTx({...editingTx, merchant: e.target.value, person: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Category</label>
