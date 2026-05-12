@@ -73,18 +73,6 @@ create table public.repayments (
   notes text
 );
 
--- 7. Savings Goals
-create table public.savings_goals (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  name text not null,
-  target_amount decimal not null,
-  currency text not null,
-  deadline date not null,
-  status text default 'active', -- 'active' | 'completed'
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
 -- Enable RLS
 alter table public.users enable row level security;
 alter table public.transactions enable row level security;

@@ -100,10 +100,10 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
         <div className="mt-auto">
           <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-24 h-24 bg-gold/10 blur-3xl -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-700" />
-            <p className="text-[10px] font-black text-gold uppercase tracking-widest mb-3">Elite Status</p>
+            <p className="text-[10px] font-black text-gold uppercase tracking-widest mb-3">System Readiness</p>
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-white">NRB Member</span>
-              <div className="w-2 h-2 bg-gold rounded-full animate-pulse shadow-[0_0_10px_#D4AF37]" />
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
             </div>
           </div>
         </div>

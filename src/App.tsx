@@ -12,10 +12,11 @@ import Ledger from './components/Ledger';
 import Savings from './components/Savings';
 import { View, Transaction, Account } from './types';
 import { SupabaseProvider, useSupabase } from './contexts/SupabaseContext';
-import { supabase, tables } from './lib/supabase';
+import { supabase, tables, isSupabaseConfigured } from './lib/supabase';
 import WalletView from './components/Wallet';
 import Settings from './components/Settings';
 import Login from './components/Login';
+import { getDocs, writeBatch } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 
 function AppContent() {
@@ -23,7 +24,6 @@ function AppContent() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
-  const [savingsGoals, setSavingsGoals] = useState<any[]>([]);
   const [notifiedReminders, setNotifiedReminders] = useState<Set<string>>(new Set());
   const [accounts, setAccounts] = useState<Account[]>([]);
 
@@ -69,19 +69,9 @@ function AppContent() {
       const { data: acs } = await supabase.from('accounts').select('*');
       if (acs) setAccounts(acs as Account[]);
 
-      // Fetch Loans
-      const { data: lns } = await supabase
-        .from('loans')
-        .select('*')
-        .order('due_date', { ascending: true });
+      // Fetch Loans (Reminders)
+      const { data: lns } = await supabase.from('loans').select('*').order('due_date', { ascending: true });
       if (lns) setReminders(lns);
-
-      // Fetch Savings Goals
-      const { data: sgs } = await supabase
-        .from('savings_goals')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (sgs) setSavingsGoals(sgs);
     };
 
     fetchData();
@@ -104,18 +94,9 @@ function AppContent() {
         if (payload.eventType === 'DELETE') setAccounts(prev => prev.filter(a => a.id === payload.old.id));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'loans' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setReminders(prev => [...prev, payload.new]);
-        } else if (payload.eventType === 'UPDATE') {
-          setReminders(prev => prev.map(l => l.id === payload.new.id ? payload.new : l));
-        } else if (payload.eventType === 'DELETE') {
-          setReminders(prev => prev.filter(l => l.id === payload.old.id));
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'savings_goals' }, (payload) => {
-        if (payload.eventType === 'INSERT') setSavingsGoals(prev => [payload.new, ...prev]);
-        if (payload.eventType === 'UPDATE') setSavingsGoals(prev => prev.map(g => g.id === payload.new.id ? payload.new : g));
-        if (payload.eventType === 'DELETE') setSavingsGoals(prev => prev.filter(g => g.id === payload.old.id));
+        if (payload.eventType === 'INSERT') setReminders(prev => [...prev, payload.new]);
+        if (payload.eventType === 'UPDATE') setReminders(prev => prev.map(l => l.id === payload.new.id ? payload.new : l));
+        if (payload.eventType === 'DELETE') setReminders(prev => prev.filter(l => l.id === payload.old.id));
       })
       .subscribe();
 
@@ -198,28 +179,6 @@ function AppContent() {
     }
   };
 
-  const handleSettleLoan = async (loanId: string) => {
-    try {
-      await supabase
-        .from('loans')
-        .update({ status: 'settled' })
-        .eq('id', loanId);
-    } catch (error) {
-      console.error('Settle Loan Error:', error);
-    }
-  };
-
-  const handleAddSavingsGoal = async (goal: any) => {
-    if (!user) return;
-    try {
-      await supabase
-        .from('savings_goals')
-        .insert([{ ...goal, user_id: user.id }]);
-    } catch (error) {
-      console.error('Add Savings Goal Error:', error);
-    }
-  };
-
   const handleResetAllData = async () => {
     if (!user) return;
     try {
@@ -282,9 +241,9 @@ function AppContent() {
           />
         );
       case 'ledger':
-        return <Ledger loans={reminders} onAddTransaction={handleAddTransaction} onSettle={handleSettleLoan} />;
+        return <Ledger transactions={transactions} onAdd={handleAddTransaction} />;
       case 'savings':
-        return <Savings goals={savingsGoals} onAddGoal={handleAddSavingsGoal} />;
+        return <Savings />;
       case 'ai-advisor':
         return <AIChat transactions={transactions} />;
       case 'settings':
@@ -309,6 +268,19 @@ function AppContent() {
 
   return (
     <div className="flex min-h-screen bg-[#0a0a0a] selection:bg-gold/20 selection:text-gold">
+      {!isSupabaseConfigured && (
+        <div className="fixed top-0 left-0 right-0 z-[200] bg-zinc-900/80 text-gold px-4 py-2 text-center text-[10px] backdrop-blur-md border-b border-gold/10 flex items-center justify-center gap-3">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gold/10 border border-gold/20">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-gold animate-pulse" />
+            <p className="font-bold uppercase tracking-[0.2em] leading-none">
+              Demo Mode Active
+            </p>
+          </div>
+          <p className="text-zinc-400 font-medium">
+            Local instance running without Supabase. Config in Settings to persist data.
+          </p>
+        </div>
+      )}
       <Sidebar currentView={currentView} onViewChange={setCurrentView} />
       <main className="lg:ml-64 flex-1 p-6 lg:p-12 max-w-[1400px] mx-auto w-full transition-all duration-300">
         <div className="mt-16 lg:mt-0">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Wallet, LogIn, ShieldCheck, Cpu, Globe, Lock, Mail, UserPlus, KeyRound, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface LoginProps {
   onLoginSuccess?: () => void;
@@ -109,6 +109,20 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             </div>
 
             <AnimatePresence mode="wait">
+              {!isSupabaseConfigured && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-6 bg-gold/5 border border-gold/10 rounded-2xl space-y-3"
+                >
+                  <p className="text-[10px] text-gold font-black uppercase tracking-[0.2em] text-center">
+                    Automatic Demo Mode Initialized
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-medium leading-relaxed text-center">
+                    You are viewing a local preview. Data will not persist. To use the real cloud vault, configure Supabase credentials in the <b>Settings</b> menu.
+                  </p>
+                </motion.div>
+              )}
               {error && (
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
@@ -250,7 +264,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
           {/* Footer Metadata */}
           <div className="px-12 py-8 bg-black/40 border-t border-white/5 flex items-center justify-between grayscale opacity-50 contrast-125">
-            <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">NR-Elite Supabase-Powered</p>
+            <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">NRB-Protocol Supabase-Powered</p>
             <div className="flex gap-4">
               <div className="w-1 h-1 rounded-full bg-gold" />
               <div className="w-1 h-1 rounded-full bg-gold" />

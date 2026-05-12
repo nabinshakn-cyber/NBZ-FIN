@@ -4,12 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { generateSavingsPlanWithAI } from '../services/geminiService';
 import { Currency } from '../types';
 
-interface SavingsProps {
-  goals: any[];
-  onAddGoal: (goal: any) => Promise<void>;
-}
-
-export default function Savings({ goals, onAddGoal }: SavingsProps) {
+export default function Savings() {
   const [goalName, setGoalName] = useState('');
   const [amount, setAmount] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -32,15 +27,6 @@ export default function Savings({ goals, onAddGoal }: SavingsProps) {
     );
     setPlan(data);
     setIsPlanning(false);
-
-    // Persist goal
-    await onAddGoal({
-      name: goalName,
-      target_amount: Number(amount),
-      currency,
-      deadline,
-      status: 'active'
-    });
   };
 
   return (
@@ -124,30 +110,20 @@ export default function Savings({ goals, onAddGoal }: SavingsProps) {
         <div className="lg:col-span-2">
           <AnimatePresence mode="wait">
             {!plan && !isPlanning ? (
-                <div className="card h-full border-dashed border-2 border-zinc-200 flex flex-col items-center justify-center text-center p-12 overflow-y-auto">
-                  <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-300 mb-4">
-                    <Target size={32} />
-                  </div>
-                  <h3 className="text-lg font-bold text-zinc-400">Goals in Orbit</h3>
-                  <div className="mt-4 w-full space-y-3">
-                    {goals.map(g => (
-                      <div key={g.id} className="p-4 bg-white border border-zinc-100 rounded-xl text-left flex justify-between items-center group">
-                        <div>
-                          <p className="font-bold text-zinc-800">{g.name}</p>
-                          <p className="text-[10px] text-zinc-400 uppercase tracking-widest">{g.currency} {Number(g.target_amount).toLocaleString()} • {g.deadline}</p>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <CheckCircle2 size={16} />
-                        </div>
-                      </div>
-                    ))}
-                    {goals.length === 0 && (
-                      <p className="text-xs text-zinc-400 mt-2 max-w-xs mx-auto">
-                        Define your goal to receive a professional AI savings strategy.
-                      </p>
-                    )}
-                  </div>
+              <motion.div 
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="card h-full border-dashed border-2 border-zinc-200 flex flex-col items-center justify-center text-center p-12"
+              >
+                <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-300 mb-4">
+                  <Target size={32} />
                 </div>
+                <h3 className="text-lg font-bold text-zinc-400">No active blueprint</h3>
+                <p className="text-sm text-zinc-400 mt-2 max-w-xs">
+                  Define your goal to receive a professional AI savings strategy.
+                </p>
+              </motion.div>
             ) : isPlanning ? (
               <motion.div 
                 key="loading"

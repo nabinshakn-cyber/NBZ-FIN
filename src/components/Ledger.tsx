@@ -5,17 +5,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { analyzeLedgerWithAI, generateReminderWithAI } from '../services/geminiService';
 
 interface LedgerProps {
-  loans: any[];
-  onAddTransaction: (t: Omit<Transaction, 'id'>) => void;
-  onSettle: (id: string) => void;
+  transactions: Transaction[];
+  onAdd: (t: Omit<Transaction, 'id'>) => void;
 }
 
-export default function Ledger({ loans, onAddTransaction, onSettle }: LedgerProps) {
+export default function Ledger({ transactions, onAdd }: LedgerProps) {
   const [activeCurrency, setActiveCurrency] = useState<Currency>('AED');
   const [aiInput, setAiInput] = useState('');
   const [isAiParsing, setIsAiParsing] = useState(false);
 
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [selectedItem, setSelectedItem] = useState<Transaction | null>(null);
   const [reminderData, setReminderData] = useState<{
     whatsapp_message: string;
     email_message: string;
@@ -24,19 +23,19 @@ export default function Ledger({ loans, onAddTransaction, onSettle }: LedgerProp
   const [isGeneratingReminder, setIsGeneratingReminder] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   
-  const ledgerItems = loans.filter(l => 
-    l.currency === activeCurrency && l.status === 'pending'
+  const ledgerItems = transactions.filter(t => 
+    (t.type === 'lent' || t.type === 'borrowed') && t.currency === activeCurrency
   );
 
-  const totalLent = ledgerItems.filter(l => l.type === 'lent').reduce((acc, l) => acc + Number(l.amount), 0);
-  const totalBorrowed = ledgerItems.filter(l => l.type === 'borrowed').reduce((acc, l) => acc + Number(l.amount), 0);
+  const totalLent = ledgerItems.filter(t => t.type === 'lent').reduce((acc, t) => acc + t.amount, 0);
+  const totalBorrowed = ledgerItems.filter(t => t.type === 'borrowed').reduce((acc, t) => acc + t.amount, 0);
 
   const handleAiParse = async () => {
     if (!aiInput.trim()) return;
     setIsAiParsing(true);
     const parsed = await analyzeLedgerWithAI(aiInput);
     if (parsed) {
-      onAddTransaction({
+      onAdd({
         date: new Date().toISOString().split('T')[0],
         amount: parsed.amount,
         currency: parsed.currency,
@@ -52,14 +51,14 @@ export default function Ledger({ loans, onAddTransaction, onSettle }: LedgerProp
     setIsAiParsing(false);
   };
 
-  const handleGenerateReminder = async (item: any) => {
+  const handleGenerateReminder = async (item: Transaction) => {
     setSelectedItem(item);
     setIsGeneratingReminder(true);
     const data = await generateReminderWithAI(
-      item.entity_name || 'Friend',
-      Number(item.amount),
+      item.person || 'Friend',
+      item.amount,
       item.currency,
-      item.due_date || item.created_at
+      item.date
     );
     setReminderData(data);
     setIsGeneratingReminder(false);
@@ -193,39 +192,30 @@ export default function Ledger({ loans, onAddTransaction, onSettle }: LedgerProp
                   </div>
                 </div>
               </div>
-                <div className="flex items-center gap-6 self-end md:self-center">
+              <div className="flex items-center gap-6 self-end md:self-center">
                 <div className="text-right">
                   <div className="flex items-baseline justify-end gap-2">
                     <span className={`text-xs font-bold ${item.type === 'lent' ? 'text-emerald-500' : 'text-indigo-400'}`}>{item.currency}</span>
                     <p className={`text-3xl font-black tracking-tighter ${
                         item.type === 'lent' ? 'text-emerald-400' : 'text-indigo-400'
                     }`}>
-                        {item.type === 'lent' ? '+' : '-'}{Number(item.amount).toLocaleString()}
+                        {item.type === 'lent' ? '+' : '-'}{item.amount.toLocaleString()}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 justify-end mt-1 text-zinc-600">
                       <AlertCircle size={12} className={item.type === 'lent' ? 'text-emerald-400/50' : 'text-indigo-400/50'} />
-                      <span className="text-[9px] font-black uppercase tracking-widest">Protocol Settlement: {item.due_date}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest">Protocol Settlement: 14D</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {item.type === 'lent' && (
-                    <button 
-                      onClick={() => handleGenerateReminder(item)}
-                      className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-zinc-500 hover:text-gold hover:border-gold/30 hover:bg-gold/5 border border-white/5 transition-all group/btn shadow-xl"
-                      title="Generate AI Reminder"
-                    >
-                      <Bell size={20} className="group-hover/btn:animate-swing" />
-                    </button>
-                  )}
+                {item.type === 'lent' && (
                   <button 
-                    onClick={() => onSettle(item.id)}
-                    className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-zinc-500 hover:text-emerald-500 hover:border-emerald-500/30 hover:bg-emerald-500/5 border border-white/5 transition-all group/btn shadow-xl font-black text-[10px]"
-                    title="Settle Tranche"
+                    onClick={() => handleGenerateReminder(item)}
+                    className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-zinc-500 hover:text-gold hover:border-gold/30 hover:bg-gold/5 border border-white/5 transition-all group/btn shadow-xl"
+                    title="Generate AI Reminder"
                   >
-                    <ShieldCheck size={20} />
+                    <Bell size={20} className="group-hover/btn:animate-swing" />
                   </button>
-                </div>
+                )}
               </div>
             </div>
           ))}
@@ -258,7 +248,7 @@ export default function Ledger({ loans, onAddTransaction, onSettle }: LedgerProp
                   </div>
                   <div>
                     <h3 className="font-black text-xl text-white tracking-tight uppercase">AI Nudge Engine</h3>
-                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Tranche Reconciliation for {selectedItem.entity_name}</p>
+                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Tranche Reconciliation for {selectedItem.person}</p>
                   </div>
                 </div>
                 <button 

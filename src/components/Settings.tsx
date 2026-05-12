@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Trash2, LogOut, User, Bell, ShieldCheck, Globe, Database, HardDrive, Smartphone, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useSupabase } from '../contexts/SupabaseContext';
-import { supabase } from '../lib/supabase';
+import { useFirebase } from '../contexts/FirebaseContext';
+import { auth } from '../lib/firebase';
 
 interface SettingsProps {
   onResetData: () => Promise<void>;
@@ -10,7 +10,7 @@ interface SettingsProps {
 }
 
 export default function Settings({ onResetData, onSeedData }: SettingsProps) {
-  const { user } = useSupabase();
+  const { user } = useFirebase();
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
@@ -43,12 +43,12 @@ export default function Settings({ onResetData, onSeedData }: SettingsProps) {
           <div className="card bg-zinc-900 border-white/5 p-8 flex flex-col items-center text-center">
             <div className="w-24 h-24 rounded-full border-4 border-gold/20 p-1 mb-6">
               <img 
-                src={user?.user_metadata?.avatar_url || 'https://ui-avatars.com/api/?name=' + (user?.user_metadata?.full_name || 'Elite')} 
+                src={user?.photoURL || 'https://ui-avatars.com/api/?name=' + (user?.displayName || 'User')} 
                 alt="Profile" 
                 className="w-full h-full rounded-full object-cover"
               />
             </div>
-            <h2 className="text-xl font-black text-white uppercase tracking-tight">{user?.user_metadata?.full_name || 'Citizen Zero'}</h2>
+            <h2 className="text-xl font-black text-white uppercase tracking-tight">{user?.displayName || 'Citizen Zero'}</h2>
             <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-1">{user?.email}</p>
             <div className="flex items-center gap-2 mt-6 px-4 py-2 bg-gold/10 rounded-full border border-gold/20">
               <ShieldCheck size={14} className="text-gold" />
@@ -57,7 +57,7 @@ export default function Settings({ onResetData, onSeedData }: SettingsProps) {
           </div>
 
           <button 
-            onClick={() => supabase.auth.signOut()}
+            onClick={() => auth.signOut()}
             className="w-full flex items-center justify-center gap-3 p-4 bg-zinc-900 border border-white/5 rounded-2xl text-rose-400 font-black uppercase tracking-widest text-xs hover:bg-rose-500/10 transition-all"
           >
             <LogOut size={18} />

@@ -312,7 +312,7 @@ export default function Dashboard({ transactions, reminders = [], accounts = [],
                 </div>
                 <div>
                   <h3 className="font-black text-xl text-white tracking-tight">Intelligence Report</h3>
-                  <p className="text-xs text-zinc-500 font-medium tracking-wide">Elite Wealth Optimization Suite</p>
+                  <p className="text-xs text-zinc-500 font-medium tracking-wide">Professional Strategic Suite</p>
                 </div>
               </div>
               <div className="hidden sm:flex items-center gap-2 text-[10px] font-black text-gold uppercase tracking-[0.2em] bg-gold/5 px-4 py-2 rounded-xl border border-gold/10">
